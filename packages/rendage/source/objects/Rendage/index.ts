@@ -56,49 +56,82 @@ class Rendage {
             return false;
         }
 
+        if (typeof request.query.loadRendage !== 'undefined') {
+            const page = await this.browser.newPage();
+            const url = this.options.serverURL + request.baseUrl + '?rendage';
 
-        const page = await this.browser.newPage();
-        const url = this.options.serverURL + request.baseUrl + '?rendage';
-        await page.goto(url);
+            if (request.cookies) {
+                page.setCookie(request.cookies);
+            }
+            await page.goto(url);
 
-        const title = await page.$('title');
-        const content = await page.$('body');
-        if (!content) {
-            return false;
+            const title = await page.title();
+            const content = await page.$('body');
+            if (!content) {
+                return false;
+            }
+
+            const height = parseInt((request.query.rendageHeight as string || '821'));
+            const width = parseInt((request.query.rendageWidth as string || '1440'));
+
+            const imageBuffer = await content.screenshot({
+                clip: {
+                    height,
+                    width,
+                    x: 0,
+                    y: 0,
+                },
+                // fullPage: true,
+                type: 'webp',
+            });
+            const imageBase64 = imageBuffer.toString('base64');
+
+            const html = strings.removeWhitespace(`
+                <html>
+                    <head>
+                        <title>${title || ''}</title>
+
+                        <style>
+                            html, body {
+                                margin: 0;
+                            }
+
+                            img {
+                                width: 100%;
+                                height: 100%;
+                                pointer-events: none;
+                                user-select: none;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="data:image/png;base64,${imageBase64}" />
+                    </body>
+                </html>
+            `);
+
+            response.send(html);
+
+            return true;
         }
 
-        const imageBuffer = await content.screenshot({
-            clip: {
-                height: 821,
-                width: 1440,
-                x: 0,
-                y: 0,
-            },
-            // fullPage: true,
-            type: 'webp',
-        });
-        const imageBase64 = imageBuffer.toString('base64');
 
+        // Sends a loading screen to the client
+        // which will request from the server a rendage of a certain width/height
         const html = strings.removeWhitespace(`
             <html>
                 <head>
-                    <title>${title || ''}</title>
-
                     <style>
                         html, body {
                             margin: 0;
-                        }
-
-                        img {
-                            width: 100%;
-                            height: 100%;
-                            pointer-events: none;
-                            user-select: none;
+                            background: black;
+                            display: grid;
+                            place-content: center;
                         }
                     </style>
                 </head>
                 <body>
-                    <img src="data:image/png;base64,${imageBase64}" />
+                    loading
                 </body>
             </html>
         `);
