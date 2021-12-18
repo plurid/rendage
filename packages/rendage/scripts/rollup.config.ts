@@ -33,7 +33,9 @@ export default {
         '@plurid/deon',
         '@plurid/plurid-functions',
         'cross-fetch',
+        'express',
         'isomorphic-ws',
+        'puppeteer',
         'ws',
     ],
     watch: {
