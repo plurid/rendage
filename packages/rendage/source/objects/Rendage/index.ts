@@ -13,16 +13,28 @@
         strings,
     } from '@plurid/plurid-functions';
     // #endregion libraries
+
+
+    // #region external
+    import {
+        RendageOptions,
+    } from '~data/interfaces'
+    // #endregion external
 // #endregion imports
 
 
 
 // #region module
 class Rendage {
+    private options;
     private browser: Browser | null = null;
 
 
-    constructor() {
+    constructor(
+        options: RendageOptions,
+    ) {
+        this.options = options;
+
         this.load();
     }
 
@@ -40,15 +52,16 @@ class Rendage {
             return false;
         }
 
-        if (request.query.rendage) {
+        if (typeof request.query.rendage !== 'undefined') {
             return false;
         }
 
 
         const page = await this.browser.newPage();
-        await page.goto(request.originalUrl + '?rendage');
+        const url = this.options.serverURL + request.baseUrl + '?rendage';
+        await page.goto(url);
 
-        const head = await page.$('head');
+        const title = await page.$('title');
         const content = await page.$('body');
         if (!content) {
             return false;
@@ -69,7 +82,7 @@ class Rendage {
         const html = strings.removeWhitespace(`
             <html>
                 <head>
-                    ${head || ''}
+                    <title>${title || ''}</title>
 
                     <style>
                         html, body {
